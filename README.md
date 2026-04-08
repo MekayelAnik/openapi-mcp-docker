@@ -34,15 +34,14 @@
 
 ---
 
-## Buy Me a Coffee
-
+## 😎 Buy Me a Coffee ☕︎
 **Your support encourages me to keep creating/supporting my open-source projects.** If you found value in this project, you can buy me a coffee to keep me inspired.
 
 <p align="center">
-<a href="https://www.buymeacoffee.com/mekayelanik"><img src="https://img.buymeacoffee.com/button-api/?text=Buy me a coffee&emoji=&slug=mekayelanik&button_colour=FF5F5F&font_colour=ffffff&font_family=Cookie&outline_colour=000000&coffee_colour=FFDD00" /></a>
+<a href="https://07mekayel07.gumroad.com/coffee" target="_blank">
+<img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" width="217" height="60">
+</a>
 </p>
-
----
 
 ## Overview
 
@@ -595,12 +594,13 @@ docker inspect openapi-mcp-server > inspect.json
 
 ---
 
-## Buy Me a Coffee
-
+## 😎 Buy Me a Coffee ☕︎
 **Your support encourages me to keep creating/supporting my open-source projects.** If you found value in this project, you can buy me a coffee to keep me inspired.
 
 <p align="center">
-<a href="https://www.buymeacoffee.com/mekayelanik"><img src="https://img.buymeacoffee.com/button-api/?text=Buy me a coffee&emoji=&slug=mekayelanik&button_colour=FF5F5F&font_colour=ffffff&font_family=Cookie&outline_colour=000000&coffee_colour=FFDD00" /></a>
+  <a href="https://07mekayel07.gumroad.com/coffee" target="_blank">
+    <img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" width="217" height="60">
+  </a>
 </p>
 
 ## Support & License
