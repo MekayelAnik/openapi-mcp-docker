@@ -77,7 +77,7 @@ OpenAPI MCP Server is a Model Context Protocol server that bridges OpenAPI speci
 |:----|:---------:|:------------|:---------|
 | `stable` | High | Most stable release | **Recommended for production** |
 | `latest` | High | Latest stable release | Stay current with stable features |
-| `0.1.0` | High | Specific version | Specific version | Version pinning for consistency |
+| `0.2.15` | High | Specific version | Specific version | Version pinning for consistency |
 | `beta` | Low | Beta releases | **Testing only** |
 
 ### System Requirements
