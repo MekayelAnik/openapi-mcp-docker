@@ -55,11 +55,18 @@ COPY --from=haproxy-src /usr/local/sbin/haproxy /usr/sbin/haproxy
 RUN mkdir -p /usr/local/sbin && ln -sf /usr/sbin/haproxy /usr/local/sbin/haproxy
 
 # Install awslabs.openapi-mcp-server from PyPI (cache mount reuses pip downloads across builds)
-# Pin fastmcp<3.0.0: upstream awslabs.openapi-mcp-server uses get_prompts() which was
-# renamed to list_prompts() in fastmcp 3.x, causing AttributeError on startup.
+# Auto-detect fastmcp compatibility: upstream uses get_prompts() which was renamed
+# to list_prompts() in fastmcp 3.x. Pin <3.0.0 only if the method is missing;
+# once upstream fixes their code, builds will automatically use the latest fastmcp.
 RUN --mount=type=cache,target=/root/.cache/pip \\
     echo "Installing package: ${OPENAPI_MCP_PKG}" && \\
-    pip install "${OPENAPI_MCP_PKG}" "fastmcp>=2.14.0,<3.0.0" && \\
+    pip install "${OPENAPI_MCP_PKG}" && \\
+    if python3 -c "from fastmcp import FastMCP; assert hasattr(FastMCP('t'), 'get_prompts')" 2>/dev/null; then \\
+        echo "fastmcp API compatible (has get_prompts)"; \\
+    else \\
+        echo "fastmcp missing get_prompts(), downgrading to <3.0.0" && \\
+        pip install "fastmcp>=2.14.0,<3.0.0"; \\
+    fi && \\
     echo "Package installed successfully"
 
 # Install Supergateway (cache mount shares npm cache with previous step)
