@@ -1,4 +1,4 @@
-<p align="center"><img src="https://www.openapis.org/wp-content/uploads/sites/3/2016/11/favicon.png" alt="OpenAPI Logo" width="200"></p>
+<p align="center"><img src="https://www.openapis.org/wp-content/uploads/sites/31/2018/02/OpenAPI_Logo_Pantone-1.png" alt="OpenAPI Logo" width="200"></p>
 
 # OpenAPI MCP Server
 
