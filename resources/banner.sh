@@ -4,6 +4,7 @@ ORANGE='\033[38;5;208m'
 BLUE='\033[38;5;12m'
 ERROR_RED='\033[38;5;9m'
 GREEN='\033[38;5;2m'
+SWAGHGER_GREEN='\033[38;5;82m'
 ASH_GRAY='\033[38;5;250m'
 NC='\033[0m'
 
@@ -19,14 +20,28 @@ print_separator() {
 
 # Print ASCII art
 print_ascii_art() {
-    printf "${GREEN}   ____                    ___    ____  ____   __  __  ____  ____     ____                                   ${NC}\n"
-    printf "${GREEN}  / __ \\                  / _ \\  |  _ \\|_  _| |  \\/  |/ ___||  _ \\   / ___|  ___  _ __ __   __ ___  _ __    ${NC}\n"
-    printf "${GREEN} | |  | | _ __    ___    / /_\\ \\ | |_) | | |   | |\\/| | |    | |_) |  \\___ \\ / _ \\| '__|  \\ / // _ \\| '__|   ${NC}\n"
-    printf "${GREEN} | |  | || '_ \\  / _ \\  / _____ \\|  __/  | |   | |  | | |___ |  __/    ___) |  __/| |  \\   / /|  __/| |      ${NC}\n"
-    printf "${GREEN} | |__| || |_) ||  __/ / /     \\ | |    _| |_  | |  | |\\____|_|  _    |____/ \\___||_|   \\_/   \\___||_|      ${NC}\n"
-    printf "${GREEN}  \\____/ | .__/  \\___||__/       \\|_|   |_____| |_|  |_|     (_) (_)                                        ${NC}\n"
-    printf "${GREEN}         |_|                                                                                                ${NC}\n"
+    printf "${GREEN}    /SSSSSS                                 /SSSSSS  /SSSSSSS  /SSSSSS       /SS      /SS  /SSSSSS  /SSSSSSS   ${NC}\n"
+    printf "${GREEN}   /SS__  SS                               /SS__  SS| SS__  SS|_  SS_/      | SSS    /SSS /SS__  SS| SS__  SS  ${NC}\n"
+    printf "${GREEN}  | SS  \ SS  /SSSSSS   /SSSSSS  /SSSSSSS | SS  \ SS| SS  \ SS  | SS        | SSSS  /SSSS| SS  \__/| SS  \ SS  ${NC}\n"
+    printf "${GREEN}  | SS  | SS /SS__  SS /SS__  SS| SS__  SS| SSSSSSSS| SSSSSSS/  | SS        | SS SS/SS SS| SS      | SSSSSSS/  ${NC}\n"
+    printf "${GREEN}  | SS  | SS| SS  \ SS| SSSSSSSS| SS  \ SS| SS__  SS| SS____/   | SS        | SS  SSS| SS| SS      | SS____/   ${NC}\n"
+    printf "${GREEN}  | SS  | SS| SS  | SS| SS_____/| SS  | SS| SS  | SS| SS        | SS        | SS\  S | SS| SS    SS| SS        ${NC}\n"
+    printf "${GREEN}  |  SSSSSS/| SSSSSSS/|  SSSSSSS| SS  | SS| SS  | SS| SS       /SSSSSS      | SS \/  | SS|  SSSSSS/| SS        ${NC}\n"
+    printf "${GREEN}   \______/ | SS____/  \_______/|__/  |__/|__/  |__/|__/      |______/      |__/     |__/ \______/ |__/        ${NC}\n"
+    printf "${GREEN}            | SS                                                                                               ${NC}\n"
+    printf "${GREEN}            | SS                                                                                               ${NC}\n"
+    printf "${GREEN}            |__/                                                                                               ${NC}\n"
     printf "\n"
+    printf "\n"
+    printf "${GREEN}                /SSSSSS  /SSSSSSSS /SSSSSSS  /SS    /SS /SSSSSSSS /SSSSSSS                                     ${NC}\n"
+    printf "${GREEN}               /SS__  SS| SS_____/| SS__  SS| SS   | SS| SS_____/| SS__  SS                                    ${NC}\n"
+    printf "${GREEN}              | SS  \__/| SS      | SS  \ SS| SS   | SS| SS      | SS  \ SS                                    ${NC}\n"
+    printf "${GREEN}              |  SSSSSS | SSSSS   | SSSSSSS/|  SS / SS/| SSSSS   | SSSSSSS/                                    ${NC}\n"
+    printf "${GREEN}               \____  SS| SS__/   | SS__  SS \  SS SS/ | SS__/   | SS__  SS                                    ${NC}\n"
+    printf "${GREEN}               /SS  \ SS| SS      | SS  \ SS  \  SSS/  | SS      | SS  \ SS                                    ${NC}\n"
+    printf "${GREEN}              |  SSSSSS/| SSSSSSSS| SS  | SS   \  S/   | SSSSSSSS| SS  | SS                                    ${NC}\n"
+    printf "${GREEN}               \______/ |________/|__/  |__/    \_/    |________/|__/  |__/                                    ${NC}\n"
+    printf "\n"                                                                    
 }
 
 # Print Maintainer information
