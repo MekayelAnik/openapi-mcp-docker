@@ -713,23 +713,31 @@ start_mcp_server() {
     fi
 
     # Server configuration
-    local server_host
-    server_host="$(trim "${SERVER_HOST:-}")"
-    if [ -n "$server_host" ]; then
-        mcp_server_cmd="${mcp_server_cmd} --host ${server_host}"
-    fi
-
-    local server_port
-    server_port="$(trim "${SERVER_PORT:-}")"
-    if [ -n "$server_port" ]; then
-        mcp_server_cmd="${mcp_server_cmd} --port ${server_port}"
-    fi
+    # NOTE: upstream awslabs.openapi-mcp-server has NO --host/--port CLI flags;
+    # transport is stdio only (supergateway provides HTTP on INTERNAL_PORT).
+    # SERVER_HOST/SERVER_PORT/SERVER_TRANSPORT/SERVER_NAME/SERVER_MESSAGE_TIMEOUT
+    # are honored by the upstream config loader via environment variables, so
+    # they propagate automatically through the Docker env — no CLI translation.
+    export SERVER_HOST SERVER_PORT SERVER_TRANSPORT SERVER_NAME SERVER_MESSAGE_TIMEOUT LOG_LEVEL 2>/dev/null || true
 
     local server_debug
     server_debug="$(trim "${SERVER_DEBUG:-}")"
     if [ -n "$server_debug" ] && is_true "$server_debug"; then
         mcp_server_cmd="${mcp_server_cmd} --debug"
     fi
+
+    local log_level
+    log_level="$(trim "${LOG_LEVEL:-}")"
+    case "$log_level" in
+        DEBUG|INFO|WARNING|ERROR|CRITICAL)
+            mcp_server_cmd="${mcp_server_cmd} --log-level ${log_level}"
+            ;;
+        "")
+            ;;
+        *)
+            echo "Invalid LOG_LEVEL='${log_level}'; expected DEBUG/INFO/WARNING/ERROR/CRITICAL. Leaving upstream default." >&2
+            ;;
+    esac
 
     case "${PROTOCOL^^}" in
         SHTTP|STREAMABLEHTTP)

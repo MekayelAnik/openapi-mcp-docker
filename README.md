@@ -108,7 +108,7 @@ services:
       - PUID=1000
       - PGID=1000
       - TZ=Asia/Dhaka
-      - PROTOCOL=HTTP
+      - PROTOCOL=SHTTP
       - ENABLE_HTTPS=false
       - HTTP_VERSION_MODE=auto
       # OpenAPI configuration
@@ -148,7 +148,7 @@ docker run -d \
   -e PUID=1000 \
   -e PGID=1000 \
   -e TZ=Asia/Dhaka \
-  -e PROTOCOL=HTTP \
+  -e PROTOCOL=SHTTP \
   -e ENABLE_HTTPS=false \
   -e HTTP_VERSION_MODE=auto \
   -e API_NAME=my-api \
