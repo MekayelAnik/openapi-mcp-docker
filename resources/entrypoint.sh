@@ -602,6 +602,8 @@ start_mcp_server() {
     # Only store_true / allow-listed flags are passed on the command line:
     #   --debug        (boolean, no value)
     #   --log-level X  (X is strictly validated)
+    # This list tracks upstream awslabs.openapi-mcp-server's env-var contract
+    # (see upstream api/config.py `env_vars` dict and README). Keep in sync.
     local forwarded_vars=(
         API_NAME API_BASE_URL API_SPEC_URL API_SPEC_PATH
         AUTH_TYPE AUTH_USERNAME AUTH_PASSWORD AUTH_TOKEN
@@ -609,8 +611,8 @@ start_mcp_server() {
         AUTH_COGNITO_CLIENT_ID AUTH_COGNITO_USERNAME AUTH_COGNITO_PASSWORD
         AUTH_COGNITO_CLIENT_SECRET AUTH_COGNITO_DOMAIN AUTH_COGNITO_SCOPES
         AUTH_COGNITO_USER_POOL_ID AUTH_COGNITO_REGION
-        SERVER_HOST SERVER_PORT SERVER_TRANSPORT SERVER_NAME SERVER_MESSAGE_TIMEOUT
-        LOG_LEVEL ENABLE_PROMETHEUS ENABLE_OPERATION_PROMPTS
+        SERVER_HOST SERVER_PORT SERVER_DEBUG SERVER_TRANSPORT SERVER_MESSAGE_TIMEOUT
+        ENABLE_PROMETHEUS PROMETHEUS_PORT ENABLE_OPERATION_PROMPTS
         UVICORN_TIMEOUT_GRACEFUL_SHUTDOWN UVICORN_GRACEFUL_SHUTDOWN
     )
     local v

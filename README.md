@@ -200,9 +200,9 @@ When HTTPS is enabled (`ENABLE_HTTPS=true`), use TLS endpoints:
 | Variable | Default | Description |
 |:---------|:-------:|:------------|
 | `API_NAME` | `awslabs-openapi-mcp-server` | API name identifier |
-| `API_BASE_URL` | *(empty)* | Base URL for the API |
+| `API_BASE_URL` | `https://localhost:8000` | Base URL for the API |
 | `API_SPEC_URL` | *(empty)* | URL to OpenAPI specification |
-| `API_SPEC_PATH` | *(empty)* | Local path to OpenAPI specification file |
+| `API_SPEC_PATH` | *(empty)* | Local path to OpenAPI specification file (at least one of `API_SPEC_URL` / `API_SPEC_PATH` is required) |
 
 #### Authentication Configuration
 
@@ -238,6 +238,23 @@ When HTTPS is enabled (`ENABLE_HTTPS=true`), use TLS endpoints:
 | `LOG_LEVEL` | `INFO` | Upstream log level: `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL` |
 
 > **Note:** Upstream `awslabs.openapi-mcp-server` runs with **stdio transport only** inside this container — the HTTP layer is provided by supergateway on `INTERNAL_PORT` and exposed externally through HAProxy on `PORT`. Upstream env vars like `SERVER_HOST`/`SERVER_PORT`/`SERVER_TRANSPORT` are forwarded to the child process as-is but have no user-visible effect in this image.
+>
+> `LOG_LEVEL` is not read by upstream as an env var (upstream only honors `--log-level` on the CLI). This entrypoint forwards it by translating to `--log-level` for convenience.
+
+#### Metrics & Monitoring
+
+| Variable | Default | Description |
+|:---------|:-------:|:------------|
+| `ENABLE_PROMETHEUS` | `false` | Enable the Prometheus metrics endpoint |
+| `PROMETHEUS_PORT` | `9090` | Port for the Prometheus metrics server |
+| `ENABLE_OPERATION_PROMPTS` | `true` | Generate operation-specific prompts from the OpenAPI spec |
+
+#### Graceful Shutdown
+
+| Variable | Default | Description |
+|:---------|:-------:|:------------|
+| `UVICORN_GRACEFUL_SHUTDOWN` | `true` | Enable graceful shutdown handling |
+| `UVICORN_TIMEOUT_GRACEFUL_SHUTDOWN` | `5.0` | Graceful shutdown timeout (seconds) |
 
 #### TLS / HTTPS Configuration
 
