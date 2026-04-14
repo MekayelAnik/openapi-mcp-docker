@@ -233,10 +233,11 @@ When HTTPS is enabled (`ENABLE_HTTPS=true`), use TLS endpoints:
 
 | Variable | Default | Description |
 |:---------|:-------:|:------------|
-| `SERVER_HOST` | `127.0.0.1` | Server bind host |
-| `SERVER_PORT` | `8000` | Internal server port |
-| `SERVER_DEBUG` | `false` | Enable debug mode |
-| `SERVER_MESSAGE_TIMEOUT` | `60` | Message timeout in seconds |
+| `SERVER_DEBUG` | `false` | Enable debug mode (passes `--debug` to upstream) |
+| `SERVER_MESSAGE_TIMEOUT` | `60` | Message timeout in seconds (forwarded to upstream as env var) |
+| `LOG_LEVEL` | `INFO` | Upstream log level: `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL` |
+
+> **Note:** Upstream `awslabs.openapi-mcp-server` runs with **stdio transport only** inside this container — the HTTP layer is provided by supergateway on `INTERNAL_PORT` and exposed externally through HAProxy on `PORT`. Upstream env vars like `SERVER_HOST`/`SERVER_PORT`/`SERVER_TRANSPORT` are forwarded to the child process as-is but have no user-visible effect in this image.
 
 #### TLS / HTTPS Configuration
 

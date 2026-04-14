@@ -592,137 +592,39 @@ start_haproxy() {
 }
 
 start_mcp_server() {
-    # Build the MCP server command with OpenAPI-specific arguments
+    # Upstream awslabs.openapi-mcp-server reads all its configuration (API,
+    # auth, server, Cognito) from environment variables via its config loader.
+    # We forward the whitelisted env vars to the child process and avoid
+    # building a CLI string — which was fragile (word-splits on whitespace in
+    # values), leaked secrets to `ps`, and allowed flag-injection via crafted
+    # values (e.g. an AUTH_TOKEN beginning with '--').
+    #
+    # Only store_true / allow-listed flags are passed on the command line:
+    #   --debug        (boolean, no value)
+    #   --log-level X  (X is strictly validated)
+    local forwarded_vars=(
+        API_NAME API_BASE_URL API_SPEC_URL API_SPEC_PATH
+        AUTH_TYPE AUTH_USERNAME AUTH_PASSWORD AUTH_TOKEN
+        AUTH_API_KEY AUTH_API_KEY_NAME AUTH_API_KEY_IN
+        AUTH_COGNITO_CLIENT_ID AUTH_COGNITO_USERNAME AUTH_COGNITO_PASSWORD
+        AUTH_COGNITO_CLIENT_SECRET AUTH_COGNITO_DOMAIN AUTH_COGNITO_SCOPES
+        AUTH_COGNITO_USER_POOL_ID AUTH_COGNITO_REGION
+        SERVER_HOST SERVER_PORT SERVER_TRANSPORT SERVER_NAME SERVER_MESSAGE_TIMEOUT
+        LOG_LEVEL ENABLE_PROMETHEUS ENABLE_OPERATION_PROMPTS
+        UVICORN_TIMEOUT_GRACEFUL_SHUTDOWN UVICORN_GRACEFUL_SHUTDOWN
+    )
+    local v
+    for v in "${forwarded_vars[@]}"; do
+        # Only export when set (even if empty) so unset vars don't shadow
+        # upstream's own defaults.
+        if [[ -n "${!v+x}" ]]; then
+            export "$v"
+        fi
+    done
+
     local mcp_server_cmd="awslabs.openapi-mcp-server"
 
-    # API configuration
-    local api_name
-    api_name="$(trim "${API_NAME:-}")"
-    if [ -n "$api_name" ]; then
-        mcp_server_cmd="${mcp_server_cmd} --api-name ${api_name}"
-    fi
-
-    local api_base_url
-    api_base_url="$(trim "${API_BASE_URL:-}")"
-    if [ -n "$api_base_url" ]; then
-        mcp_server_cmd="${mcp_server_cmd} --api-url ${api_base_url}"
-    fi
-
-    local api_spec_url
-    api_spec_url="$(trim "${API_SPEC_URL:-}")"
-    if [ -n "$api_spec_url" ]; then
-        mcp_server_cmd="${mcp_server_cmd} --spec-url ${api_spec_url}"
-    fi
-
-    local api_spec_path
-    api_spec_path="$(trim "${API_SPEC_PATH:-}")"
-    if [ -n "$api_spec_path" ]; then
-        mcp_server_cmd="${mcp_server_cmd} --spec-path ${api_spec_path}"
-    fi
-
-    # Authentication configuration
-    local auth_type
-    auth_type="$(trim "${AUTH_TYPE:-}")"
-    if [ -n "$auth_type" ]; then
-        mcp_server_cmd="${mcp_server_cmd} --auth-type ${auth_type}"
-    fi
-
-    local auth_username
-    auth_username="$(trim "${AUTH_USERNAME:-}")"
-    if [ -n "$auth_username" ]; then
-        mcp_server_cmd="${mcp_server_cmd} --auth-username ${auth_username}"
-    fi
-
-    local auth_password
-    auth_password="$(trim "${AUTH_PASSWORD:-}")"
-    if [ -n "$auth_password" ]; then
-        mcp_server_cmd="${mcp_server_cmd} --auth-password ${auth_password}"
-    fi
-
-    local auth_token
-    auth_token="$(trim "${AUTH_TOKEN:-}")"
-    if [ -n "$auth_token" ]; then
-        mcp_server_cmd="${mcp_server_cmd} --auth-token ${auth_token}"
-    fi
-
-    local auth_api_key
-    auth_api_key="$(trim "${AUTH_API_KEY:-}")"
-    if [ -n "$auth_api_key" ]; then
-        mcp_server_cmd="${mcp_server_cmd} --auth-api-key ${auth_api_key}"
-    fi
-
-    local auth_api_key_name
-    auth_api_key_name="$(trim "${AUTH_API_KEY_NAME:-}")"
-    if [ -n "$auth_api_key_name" ]; then
-        mcp_server_cmd="${mcp_server_cmd} --auth-api-key-name ${auth_api_key_name}"
-    fi
-
-    local auth_api_key_in
-    auth_api_key_in="$(trim "${AUTH_API_KEY_IN:-}")"
-    if [ -n "$auth_api_key_in" ]; then
-        mcp_server_cmd="${mcp_server_cmd} --auth-api-key-in ${auth_api_key_in}"
-    fi
-
-    # Cognito authentication
-    local auth_cognito_client_id
-    auth_cognito_client_id="$(trim "${AUTH_COGNITO_CLIENT_ID:-}")"
-    if [ -n "$auth_cognito_client_id" ]; then
-        mcp_server_cmd="${mcp_server_cmd} --auth-cognito-client-id ${auth_cognito_client_id}"
-    fi
-
-    local auth_cognito_username
-    auth_cognito_username="$(trim "${AUTH_COGNITO_USERNAME:-}")"
-    if [ -n "$auth_cognito_username" ]; then
-        mcp_server_cmd="${mcp_server_cmd} --auth-cognito-username ${auth_cognito_username}"
-    fi
-
-    local auth_cognito_password
-    auth_cognito_password="$(trim "${AUTH_COGNITO_PASSWORD:-}")"
-    if [ -n "$auth_cognito_password" ]; then
-        mcp_server_cmd="${mcp_server_cmd} --auth-cognito-password ${auth_cognito_password}"
-    fi
-
-    local auth_cognito_client_secret
-    auth_cognito_client_secret="$(trim "${AUTH_COGNITO_CLIENT_SECRET:-}")"
-    if [ -n "$auth_cognito_client_secret" ]; then
-        mcp_server_cmd="${mcp_server_cmd} --auth-cognito-client-secret ${auth_cognito_client_secret}"
-    fi
-
-    local auth_cognito_domain
-    auth_cognito_domain="$(trim "${AUTH_COGNITO_DOMAIN:-}")"
-    if [ -n "$auth_cognito_domain" ]; then
-        mcp_server_cmd="${mcp_server_cmd} --auth-cognito-domain ${auth_cognito_domain}"
-    fi
-
-    local auth_cognito_scopes
-    auth_cognito_scopes="$(trim "${AUTH_COGNITO_SCOPES:-}")"
-    if [ -n "$auth_cognito_scopes" ]; then
-        mcp_server_cmd="${mcp_server_cmd} --auth-cognito-scopes ${auth_cognito_scopes}"
-    fi
-
-    local auth_cognito_user_pool_id
-    auth_cognito_user_pool_id="$(trim "${AUTH_COGNITO_USER_POOL_ID:-}")"
-    if [ -n "$auth_cognito_user_pool_id" ]; then
-        mcp_server_cmd="${mcp_server_cmd} --auth-cognito-user-pool-id ${auth_cognito_user_pool_id}"
-    fi
-
-    local auth_cognito_region
-    auth_cognito_region="$(trim "${AUTH_COGNITO_REGION:-}")"
-    if [ -n "$auth_cognito_region" ]; then
-        mcp_server_cmd="${mcp_server_cmd} --auth-cognito-region ${auth_cognito_region}"
-    fi
-
-    # Server configuration
-    # NOTE: upstream awslabs.openapi-mcp-server has NO --host/--port CLI flags;
-    # transport is stdio only (supergateway provides HTTP on INTERNAL_PORT).
-    # SERVER_HOST/SERVER_PORT/SERVER_TRANSPORT/SERVER_NAME/SERVER_MESSAGE_TIMEOUT
-    # are honored by the upstream config loader via environment variables, so
-    # they propagate automatically through the Docker env — no CLI translation.
-    export SERVER_HOST SERVER_PORT SERVER_TRANSPORT SERVER_NAME SERVER_MESSAGE_TIMEOUT LOG_LEVEL 2>/dev/null || true
-
-    local server_debug
-    server_debug="$(trim "${SERVER_DEBUG:-}")"
-    if [ -n "$server_debug" ] && is_true "$server_debug"; then
+    if is_true "${SERVER_DEBUG:-}"; then
         mcp_server_cmd="${mcp_server_cmd} --debug"
     fi
 
