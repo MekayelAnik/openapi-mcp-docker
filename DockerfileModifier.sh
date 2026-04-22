@@ -55,17 +55,26 @@ COPY --from=haproxy-src /usr/local/sbin/haproxy /usr/sbin/haproxy
 RUN mkdir -p /usr/local/sbin && ln -sf /usr/sbin/haproxy /usr/local/sbin/haproxy
 
 # Install awslabs.openapi-mcp-server from PyPI (cache mount reuses pip downloads across builds)
-# Auto-detect fastmcp compatibility: upstream uses get_prompts() which was renamed
-# to list_prompts() in fastmcp 3.x. Pin <3.0.0 only if the method is missing;
-# once upstream fixes their code, builds will automatically use the latest fastmcp.
+# Version matrix spans three fastmcp API eras. Detect by scanning installed source:
+#   1. 'fastmcp.server.providers.openapi'    -> new API, pin fastmcp >=3.2.2,<4 (covers >=1.0.0)
+#   2. 'from fastmcp.server.openapi import ... RouteType'
+#                                            -> legacy API with RouteType enum,
+#                                               pin fastmcp >=2.13.0,<2.14.0 (covers <=0.2.8)
+#   3. else ('from fastmcp.server.openapi import ... MCPType')
+#                                            -> mid-era API, pin fastmcp >=2.14.0,<3 (covers 0.2.9-0.2.15)
 RUN --mount=type=cache,target=/root/.cache/pip \\
     echo "Installing package: ${OPENAPI_MCP_PKG}" && \\
     pip install "${OPENAPI_MCP_PKG}" && \\
-    if python3 -c "from fastmcp import FastMCP; assert hasattr(FastMCP('t'), 'get_prompts')" 2>/dev/null; then \\
-        echo "fastmcp API compatible (has get_prompts)"; \\
+    PKG_DIR=\$(python3 -c "import awslabs.openapi_mcp_server, os; print(os.path.dirname(awslabs.openapi_mcp_server.__file__))") && \\
+    if grep -rq 'fastmcp.server.providers.openapi' "\$PKG_DIR"; then \\
+        echo "Detected fastmcp 3.x import path; pinning fastmcp>=3.2.2,<4" && \\
+        pip install 'fastmcp>=3.2.2,<4'; \\
+    elif grep -rq 'from fastmcp.server.openapi import.*RouteType' "\$PKG_DIR"; then \\
+        echo "Detected legacy RouteType API; pinning fastmcp>=2.13.0,<2.14.0" && \\
+        pip install 'fastmcp>=2.13.0,<2.14.0'; \\
     else \\
-        echo "fastmcp missing get_prompts(), downgrading to <3.0.0" && \\
-        pip install "fastmcp>=2.14.0,<3.0.0"; \\
+        echo "Detected mid-era MCPType API; pinning fastmcp>=2.14.0,<3.0.0" && \\
+        pip install 'fastmcp>=2.14.0,<3.0.0'; \\
     fi && \\
     echo "Package installed successfully"
 
