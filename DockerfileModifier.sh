@@ -47,7 +47,7 @@ RUN chmod +x /usr/local/bin/entrypoint.sh /usr/local/bin/banner.sh \\
 # Install required APK packages (Python base + Node.js for supergateway)
 RUN echo "https://dl-cdn.alpinelinux.org/alpine/edge/main" > /etc/apk/repositories && \\
     echo "https://dl-cdn.alpinelinux.org/alpine/edge/community" >> /etc/apk/repositories && \\
-    apk --update-cache --no-cache add bash shadow su-exec tzdata haproxy netcat-openbsd openssl nodejs npm && \\
+    apk --update-cache --no-cache add bash shadow su-exec tzdata haproxy netcat-openbsd openssl wget ca-certificates nodejs npm && \\
     rm -rf /var/cache/apk/*
 
 # HAProxy with native QUIC/H3 support from official image

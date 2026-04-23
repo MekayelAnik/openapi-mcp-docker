@@ -591,6 +591,68 @@ start_haproxy() {
     HAPROXY_PID=$!
 }
 
+prefetch_openapi_spec() {
+    # Upstream awslabs.openapi-mcp-server fetches API_SPEC_URL via httpx with
+    # no way to disable TLS verification or inject a custom CA bundle. For
+    # self-signed / private-CA setups that breaks startup. Workaround: when
+    # API_SPEC_URL is set (and API_SPEC_PATH is not), fetch the spec here
+    # with wget, write it to disk, then swap the two env vars so upstream
+    # reads from file and skips its HTTPS code path entirely.
+    #
+    # Opt-in SSL skip: API_SPEC_SSL_VERIFY=false (default: true).
+    # Auth forwarding: AUTH_TYPE=api_key|bearer|basic — same semantics as
+    # upstream's own auth config, but sent on the spec-fetch request too.
+
+    local url="${API_SPEC_URL:-}"
+    local path="${API_SPEC_PATH:-}"
+
+    [[ -z "$url" ]] && return 0
+    [[ -n "$path" ]] && { echo "API_SPEC_PATH already set; skipping prefetch of API_SPEC_URL"; return 0; }
+
+    local cache_path="/tmp/openapi-spec.cache"
+    local wget_args=(-q -O "$cache_path" --tries=3 --timeout=15)
+
+    if ! is_true "${API_SPEC_SSL_VERIFY:-true}"; then
+        wget_args+=(--no-check-certificate)
+        echo "API_SPEC_SSL_VERIFY=false — spec fetch will skip TLS verification"
+    fi
+
+    case "$(printf '%s' "${AUTH_TYPE:-}" | tr '[:upper:]' '[:lower:]')" in
+        api_key)
+            if [[ "${AUTH_API_KEY_IN:-header}" == "header" && -n "${AUTH_API_KEY_NAME:-}" && -n "${AUTH_API_KEY:-}" ]]; then
+                wget_args+=(--header="${AUTH_API_KEY_NAME}: ${AUTH_API_KEY}")
+            elif [[ "${AUTH_API_KEY_IN:-}" == "query" && -n "${AUTH_API_KEY_NAME:-}" && -n "${AUTH_API_KEY:-}" ]]; then
+                local sep="?"
+                [[ "$url" == *"?"* ]] && sep="&"
+                url="${url}${sep}${AUTH_API_KEY_NAME}=${AUTH_API_KEY}"
+            fi
+            ;;
+        bearer)
+            [[ -n "${AUTH_TOKEN:-}" ]] && wget_args+=(--header="Authorization: Bearer ${AUTH_TOKEN}")
+            ;;
+        basic)
+            if [[ -n "${AUTH_USERNAME:-}" ]]; then
+                wget_args+=(--http-user="${AUTH_USERNAME}" --http-password="${AUTH_PASSWORD:-}")
+            fi
+            ;;
+    esac
+
+    echo "Prefetching OpenAPI spec from ${url} -> ${cache_path}"
+    if ! wget "${wget_args[@]}" "$url"; then
+        echo "Failed to fetch OpenAPI spec from ${url}" >&2
+        return 1
+    fi
+
+    if [[ ! -s "$cache_path" ]]; then
+        echo "Fetched OpenAPI spec is empty at ${cache_path}" >&2
+        return 1
+    fi
+
+    export API_SPEC_PATH="$cache_path"
+    unset API_SPEC_URL
+    echo "OpenAPI spec cached; upstream will load from API_SPEC_PATH=${API_SPEC_PATH}"
+}
+
 start_mcp_server() {
     # Upstream awslabs.openapi-mcp-server reads all its configuration (API,
     # auth, server, Cognito) from environment variables via its config loader.
@@ -753,6 +815,7 @@ main() {
 
     trap shutdown INT TERM EXIT
 
+    prefetch_openapi_spec || exit 1
     start_mcp_server
     start_haproxy
 

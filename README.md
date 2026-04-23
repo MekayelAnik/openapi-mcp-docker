@@ -201,8 +201,11 @@ When HTTPS is enabled (`ENABLE_HTTPS=true`), use TLS endpoints:
 |:---------|:-------:|:------------|
 | `API_NAME` | `awslabs-openapi-mcp-server` | API name identifier |
 | `API_BASE_URL` | `https://localhost:8000` | Base URL for the API |
-| `API_SPEC_URL` | *(empty)* | URL to OpenAPI specification |
-| `API_SPEC_PATH` | *(empty)* | Local path to OpenAPI specification file (at least one of `API_SPEC_URL` / `API_SPEC_PATH` is required) |
+| `API_SPEC_URL` | *(empty)* | URL to OpenAPI specification (HTTP or HTTPS). Spec is prefetched into the container at startup, so upstream `httpx` never touches the network. |
+| `API_SPEC_PATH` | *(empty)* | Local path to OpenAPI specification file (at least one of `API_SPEC_URL` / `API_SPEC_PATH` is required). When both are set, `API_SPEC_PATH` wins and the URL is ignored. |
+| `API_SPEC_SSL_VERIFY` | `true` | TLS verification for the spec prefetch from `API_SPEC_URL`. Set to `false` to allow self-signed or private-CA endpoints (e.g. local dev APIs). Has no effect when `API_SPEC_PATH` is used. |
+
+> **Local / self-signed HTTPS APIs:** Upstream `awslabs.openapi-mcp-server` fetches `API_SPEC_URL` via `httpx` with no flag to disable TLS verification or inject a custom CA bundle, which breaks startup against self-signed endpoints. To work around this, the entrypoint prefetches the spec with `wget` before launching the server and rewrites `API_SPEC_URL` → `API_SPEC_PATH`. For self-signed or private-CA hosts, set `API_SPEC_SSL_VERIFY=false`. Keep the default `true` for any public/internet-facing API to avoid MITM exposure. Configured `AUTH_TYPE` headers (`api_key` / `bearer` / `basic`) are forwarded on the prefetch request as well.
 
 #### Authentication Configuration
 
