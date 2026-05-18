@@ -6,7 +6,11 @@ BASE_IMAGE=$(cat ./build_data/base-image 2>/dev/null || echo "python:3.13-alpine
 HAPROXY_IMAGE=$(cat ./build_data/haproxy-image 2>/dev/null || echo "haproxy:lts-alpine")
 OPENAPI_MCP_VERSION=$(cat ./build_data/version 2>/dev/null || exit 1)
 OPENAPI_MCP_PKG="awslabs.openapi-mcp-server==${OPENAPI_MCP_VERSION}"
-SUPERGATEWAY_PKG='supergateway@latest'
+# mcp-proxy: stdio<->StreamableHTTP/SSE bridge. Replaces supergateway.
+# Stateful by default (one stdio child shared across all sessions) - avoids
+# the spawn-per-request memory leak that affected supergateway in stateless
+# mode (supercorp-ai/supergateway#108).
+MCP_PROXY_PKG=$(cat ./build_data/mcp_proxy_version 2>/dev/null || echo "mcp-proxy")
 DOCKERFILE_NAME="Dockerfile.$REPO_NAME"
 
 # Create a temporary file safely
@@ -38,16 +42,16 @@ LABEL org.opencontainers.image.source="https://github.com/mekayelanik/openapi-mc
 
 # Copy the entrypoint script into the container and make it executable
 COPY ./resources/ /usr/local/bin/
-RUN chmod +x /usr/local/bin/entrypoint.sh /usr/local/bin/banner.sh \\
+RUN chmod +x /usr/local/bin/entrypoint.sh /usr/local/bin/banner.sh /usr/local/bin/healthcheck.sh \\
     && if [ -f /usr/local/bin/build-timestamp.txt ]; then chmod +r /usr/local/bin/build-timestamp.txt; fi \\
     && mkdir -p /etc/haproxy \\
     && mv -vf /usr/local/bin/haproxy.cfg.template /etc/haproxy/haproxy.cfg.template \\
     && ls -la /etc/haproxy/haproxy.cfg.template
 
-# Install required APK packages (Python base + Node.js for supergateway)
+# Install required APK packages (Python base; nodejs+npm dropped — mcp-proxy is pure Python)
 RUN echo "https://dl-cdn.alpinelinux.org/alpine/edge/main" > /etc/apk/repositories && \\
     echo "https://dl-cdn.alpinelinux.org/alpine/edge/community" >> /etc/apk/repositories && \\
-    apk --update-cache --no-cache add bash shadow su-exec tzdata haproxy netcat-openbsd openssl wget ca-certificates nodejs npm && \\
+    apk --update-cache --no-cache add bash shadow su-exec tzdata haproxy netcat-openbsd openssl wget curl ca-certificates && \\
     rm -rf /var/cache/apk/*
 
 # HAProxy with native QUIC/H3 support from official image
@@ -85,12 +89,14 @@ RUN --mount=type=cache,target=/root/.cache/pip \\
     fi && \\
     echo "Package installed successfully"
 
-# Install Supergateway (cache mount shares npm cache with previous step)
-RUN --mount=type=cache,target=/root/.npm \\
-    echo "Installing Supergateway..." && \\
-    npm install -g ${SUPERGATEWAY_PKG} --omit=dev --no-audit --no-fund --loglevel error && \\
-    rm -rf /tmp/* /var/tmp/* && \\
-    rm -rf /usr/local/lib/node_modules/npm/man /usr/local/lib/node_modules/npm/docs /usr/local/lib/node_modules/npm/html
+# Install mcp-proxy (replaces supergateway). Pure-Python via pip.
+RUN --mount=type=cache,target=/root/.cache/pip \\
+    echo "Installing ${MCP_PROXY_PKG}..." && \\
+    pip install --no-cache-dir ${MCP_PROXY_PKG} && \\
+    mcp-proxy --version || true && \\
+    rm -rf /tmp/* /var/tmp/*
+
+LABEL org.opencontainers.image.description="OpenAPI MCP Server (mcp-proxy stdio<->HTTP bridge)"
 
 # Use an ARG for the default port
 ARG PORT=8050
@@ -98,13 +104,17 @@ ARG PORT=8050
 # Add ARG for API key
 ARG API_KEY=""
 
-# Set an ENV variable from the ARG for runtime
+# Set ENV variables from the ARGs and defaults for mcp-proxy / HAProxy tuning
 ENV PORT=\${PORT}
 ENV API_KEY=\${API_KEY}
+ENV MCP_PROXY_STATELESS=false
+ENV OPENAPI_MAX_MEM_MB=4096
+ENV HAPROXY_FRONTEND_MAXCONN=64
+ENV HAPROXY_SERVER_MAXCONN=16
 
-# L7 health check: auto-detects HTTP/HTTPS via ENABLE_HTTPS env var
-HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \\
-    CMD sh -c 'wget -q --spider --no-check-certificate \$([ "\$ENABLE_HTTPS" = "true" ] && echo https || echo http)://127.0.0.1:\${PORT:-8050}/healthz'
+# L7 health check: HAProxy answers /healthz locally
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \\
+    CMD ["/usr/local/bin/healthcheck.sh"]
 
 # Set the entrypoint
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

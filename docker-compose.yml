@@ -1,0 +1,31 @@
+services:
+  openapi-mcp:
+    image: mekayelanik/openapi-mcp:latest
+    container_name: openapi-mcp
+    environment:
+      - PORT=8050
+      - INTERNAL_PORT=38011
+      - PUID=1000
+      - PGID=1000
+      - TZ=UTC
+      - PROTOCOL=SHTTP
+      - ENABLE_HTTPS=false
+      - HTTP_VERSION_MODE=auto
+      # mcp-proxy session model. Stateful by default - one stdio child shared
+      # across all sessions, multiplexed by JSON-RPC ids.
+      - MCP_PROXY_STATELESS=false
+      # Reserved for future prlimit memory cap (MiB; 0 disables)
+      - OPENAPI_MAX_MEM_MB=4096
+      # HAProxy concurrency caps (0 disables)
+      - HAPROXY_FRONTEND_MAXCONN=64
+      - HAPROXY_SERVER_MAXCONN=16
+      # Optional: require Bearer token auth at HAProxy layer
+      # - API_KEY=replace-with-strong-secret
+      # Optional: CORS origins (comma-separated, or * for all)
+      # - CORS=*
+      # awslabs.openapi-mcp-server backend config (see upstream README)
+      # - API_BASE_URL=https://api.example.com
+      # - API_SPEC_URL=https://api.example.com/openapi.json
+    ports:
+      - "8050:8050"
+    restart: unless-stopped

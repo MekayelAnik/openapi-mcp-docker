@@ -45,7 +45,7 @@
 
 ## Overview
 
-OpenAPI MCP Server is a Model Context Protocol server that bridges OpenAPI specifications with LLMs (Large Language Models). It loads OpenAPI specs from URLs or local files and exposes the API operations as MCP tools. Built on Alpine Linux for minimal footprint and maximum security, wrapped with Supergateway for HTTP/SSE/WebSocket transport.
+OpenAPI MCP Server is a Model Context Protocol server that bridges OpenAPI specifications with LLMs (Large Language Models). It loads OpenAPI specs from URLs or local files and exposes the API operations as MCP tools. Built on Alpine Linux for minimal footprint and maximum security, wrapped with mcp-proxy for HTTP/SSE/WebSocket transport.
 
 ### Key Features
 
@@ -164,7 +164,6 @@ docker run -d \
 |:---------|:---------|:---------|
 | **HTTP** | `http://host-ip:8050/mcp` | Best compatibility (recommended) |
 | **SSE** | `http://host-ip:8050/sse` | Real-time streaming |
-| **WebSocket** | `ws://host-ip:8050/message` | Bidirectional communication |
 
 When HTTPS is enabled (`ENABLE_HTTPS=true`), use TLS endpoints:
 
@@ -172,7 +171,6 @@ When HTTPS is enabled (`ENABLE_HTTPS=true`), use TLS endpoints:
 |:---------|:---------|
 | **SHTTP** | `https://host-ip:8050/mcp` |
 | **SSE** | `https://host-ip:8050/sse` |
-| **WebSocket** | `wss://host-ip:8050/message` |
 
 > **Security Warning:** The container now defaults to HTTP (`ENABLE_HTTPS=false`) for easier local setup. Use `ENABLE_HTTPS=true` for production, public networks, or any untrusted environment.
 >
@@ -189,7 +187,7 @@ When HTTPS is enabled (`ENABLE_HTTPS=true`), use TLS endpoints:
 | Variable | Default | Description |
 |:---------|:-------:|:------------|
 | `PORT` | `8050` | External server port |
-| `INTERNAL_PORT` | `38011` | Internal MCP server port used by supergateway |
+| `INTERNAL_PORT` | `38011` | Internal MCP server port used by mcp-proxy |
 | `PUID` | `1000` | User ID for file permissions |
 | `PGID` | `1000` | Group ID for file permissions |
 | `TZ` | `Asia/Dhaka` | Container timezone ([TZ database](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones)) |
@@ -325,12 +323,25 @@ id username
 
 ---
 
+---
+
+### Memory & Concurrency Tuning
+
+This image embeds **mcp-proxy** (sparfenyuk/mcp-proxy) as the stdio↔HTTP bridge.
+
+- `MCP_PROXY_STATELESS=false` (default): one stdio backend child is shared across **all** MCP sessions, JSON-RPC-id-multiplexed. Minimal memory.
+- `MCP_PROXY_STATELESS=true`: per-request transport instance. Use only when full session isolation is required.
+- `HAPROXY_FRONTEND_MAXCONN` / `HAPROXY_SERVER_MAXCONN`: HAProxy-level caps. Defaults 64/16.
+- WebSocket transport is no longer supported (mcp-proxy upstream does not implement it).
+
+Root cause: supergateway 3.4.3 stateless mode leaks child processes (supercorp-ai/supergateway#108).
+
 ## MCP Client Configuration
 
 ### Transport Support
 
-| Client | HTTP | SSE | WebSocket | Recommended |
-|:-------|:----:|:---:|:---------:|:------------|
+| Client | HTTP | SSE | Recommended |
+|:-------|:----:|:---:|:------------|
 | **VS Code (Cline/Roo-Cline)** | Yes | Yes | No | HTTP |
 | **Claude Desktop** | Yes | Yes | Experimental | HTTP |
 | **Claude CLI** | Yes | Yes | Experimental | HTTP |
