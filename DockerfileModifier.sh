@@ -93,7 +93,7 @@ RUN --mount=type=cache,target=/root/.cache/pip \\
 RUN --mount=type=cache,target=/root/.cache/pip \\
     echo "Installing ${MCP_PROXY_PKG}..." && \\
     pip install --no-cache-dir ${MCP_PROXY_PKG} && \\
-    mcp-proxy --version || true && \\
+    mcp-proxy --version && \\
     rm -rf /tmp/* /var/tmp/*
 
 LABEL org.opencontainers.image.description="OpenAPI MCP Server (mcp-proxy stdio<->HTTP bridge)"
